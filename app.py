@@ -22,20 +22,29 @@ def hello_world():
 
 ## Embedding code
 from langchain.embeddings import CohereEmbeddings
-from langchain.document_loaders import PyPDFLoader
+from langchain.document_loaders import PyPDFLoader, PyPPTXLoader, PyDOCXLoader
 from langchain.vectorstores import Qdrant
 
 @app.route('/embed', methods=['POST'])
-def embed_pdf():
+def embed_file():
     collection_name = request.json.get("collection_name")
     file_url = request.json.get("file_url")
+    file_extension = os.path.splitext(file_url)[1].lower()
 
-    loader = PyPDFLoader(file_url)
+    if file_extension == '.pdf':
+        loader = PyPDFLoader(file_url)
+    elif file_extension == '.pptx':
+        loader = PyPPTXLoader(file_url)
+    elif file_extension == '.docx':
+        loader = PyDOCXLoader(file_url)
+    else:
+        return {"error": "Unsupported file type"}
+
     docs = loader.load_and_split()
     embeddings = CohereEmbeddings(model="multilingual-22-12", cohere_api_key=cohere_api_key)
     qdrant = Qdrant.from_documents(docs, embeddings, url=qdrant_url, collection_name=collection_name, prefer_grpc=True, api_key=qdrant_api_key)
     
-    return {"collection_name":qdrant.collection_name}
+    return {"collection_name": qdrant.collection_name}
 
 # Retrieve information from a collection
 from langchain.chains.question_answering import load_qa_chain
@@ -52,7 +61,7 @@ def retrieve_info():
     embeddings = CohereEmbeddings(model="multilingual-22-12", cohere_api_key=cohere_api_key)
     qdrant = Qdrant(client=client, collection_name=collection_name, embedding_function=embeddings.embed_query)
     search_results = qdrant.similarity_search(query, k=2)
-    chain = load_qa_chain(OpenAI(openai_api_key=openai_api_key,temperature=0.2), chain_type="stuff")
+    chain = load_qa_chain(OpenAI(openai_api_key=openai_api_key, temperature=0.2), chain_type="stuff")
     results = chain({"input_documents": search_results, "question": query}, return_only_outputs=True)
     
-    return {"results":results["output_text"]}
+    return {"results": results["output_text"]}
