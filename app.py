@@ -22,7 +22,9 @@ def hello_world():
 
 ## Embedding code
 from langchain.embeddings import CohereEmbeddings
-from langchain.document_loaders import PyPDFLoader, PyPPTXLoader, PyDOCXLoader
+from langchain.document_loaders import PyPDFLoader
+from langchain.document_loaders import PyPPTXLoader
+from langchain.document_loaders import PyDOCXLoader
 from langchain.vectorstores import Qdrant
 
 @app.route('/embed-file', methods=['POST'])
