@@ -23,31 +23,19 @@ def hello_world():
 ## Embedding code
 from langchain.embeddings import CohereEmbeddings
 from langchain.document_loaders import PyPDFLoader
-from langchain.document_loaders import PyPPTXLoader
-from langchain.document_loaders import PyDOCXLoader
 from langchain.vectorstores import Qdrant
 
-@app.route('/embed-file', methods=['POST'])
-def embed_file():
+@app.route('/embed', methods=['POST'])
+def embed_pdf():
     collection_name = request.json.get("collection_name")
     file_url = request.json.get("file_url")
-    file_extension = os.path.splitext(file_url)[1].lower()
 
-    if file_extension == '.pdf':
-        loader = PyPDFLoader(file_url)
-    elif file_extension == '.pptx':
-        loader = PyPPTXLoader(file_url)
-    elif file_extension == '.docx':
-        loader = PyDOCXLoader(file_url)
-    else:
-        return {"error": "Unsupported file type"}
-
+    loader = PyPDFLoader(file_url)
     docs = loader.load_and_split()
     embeddings = CohereEmbeddings(model="multilingual-22-12", cohere_api_key=cohere_api_key)
     qdrant = Qdrant.from_documents(docs, embeddings, url=qdrant_url, collection_name=collection_name, prefer_grpc=True, api_key=qdrant_api_key)
     
-    return {"collection_name": qdrant.collection_name}
-
+    return {"collection_name":qdrant.collection_name}
 
 # Retrieve information from a collection
 from langchain.chains.question_answering import load_qa_chain
